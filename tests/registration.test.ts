@@ -19,6 +19,37 @@ describe("preço", () => {
 });
 
 describe("validação de inscrição", () => {
+  it("aceita parceiros opcionais e normaliza nomes", () => {
+    expect(registrationSchema.parse(valid).partners).toEqual([]);
+    expect(registrationSchema.parse({
+      ...valid, partners: [{ categoryId: "masculino-c", player1Id: "  Parceiro Teste  " }],
+    }).partners[0].player1Id).toBe("Parceiro Teste");
+    expect(registrationSchema.safeParse({
+      ...valid, partners: [{ categoryId: "masculino-c", player1Id: "" }],
+    }).success).toBe(true);
+  });
+  it.each(["Parceiro", "A B".repeat(51), "Parceiro\nTeste"])("rejeita nome de parceiro inválido %s", (player1Id) => {
+    const result = registrationSchema.safeParse({
+      ...valid, partners: [{ categoryId: "masculino-c", player1Id }],
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error.issues[0].path).toEqual(["partners", 0, "player1Id"]);
+  });
+  it("aceita nome no limite de 150 caracteres", () => {
+    expect(registrationSchema.safeParse({
+      ...valid, partners: [{ categoryId: "masculino-c", player1Id: `A ${"B".repeat(148)}` }],
+    }).success).toBe(true);
+  });
+  it.each([
+    [{ categoryId: "misto-b", player1Id: "Parceiro Teste" }],
+    [{ categoryId: "inexistente", player1Id: "Parceiro Teste" }],
+    [
+      { categoryId: "masculino-c", player1Id: "Parceiro Um" },
+      { categoryId: "masculino-c", player1Id: "Parceiro Dois" },
+    ],
+  ])("rejeita parceiros em categorias não selecionadas ou duplicadas %j", (...partners) => {
+    expect(registrationSchema.safeParse({ ...valid, partners }).success).toBe(false);
+  });
   it("aceita dados válidos sem apelido nem etapas", () => expect(registrationSchema.safeParse(valid).success).toBe(true));
   it("aceita telefone opcional ausente ou em branco", () => {
     expect(registrationSchema.parse(valid).phone).toBe("");

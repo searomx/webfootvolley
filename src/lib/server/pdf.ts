@@ -4,9 +4,13 @@ import path from "node:path";
 import fontkit from "@pdf-lib/fontkit";
 import { PDFDocument, rgb } from "pdf-lib";
 import { categories, formatMoney } from "@/lib/registration";
-import type { Registration } from "@/generated/prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
 
-export async function createRegistrationPdf(registration: Registration) {
+export type RegistrationWithPartners = Prisma.RegistrationGetPayload<{
+  include: { categoryPartners: true };
+}>;
+
+export async function createRegistrationPdf(registration: RegistrationWithPartners) {
   const document = await PDFDocument.create();
   document.registerFontkit(fontkit);
   const bytes = await readFile(path.join(
@@ -68,6 +72,8 @@ export async function createRegistrationPdf(registration: Registration) {
   line("Categorias selecionadas", 14);
   for (const category of categories.filter((item) => registration.categories.includes(item.id))) {
     line(`${category.date}/2026 - ${category.time} - ${category.name}`);
+    const partner = registration.categoryPartners.find((item) => item.categoryId === category.id);
+    line(`Parceiro: ${partner?.player1Id || "Não informado"}`);
   }
   y -= 12;
   line(`Total: ${formatMoney(registration.amountCents)}`, 16);

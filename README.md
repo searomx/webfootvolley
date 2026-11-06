@@ -46,6 +46,9 @@ Para aplicar migrations existentes, use `npm run db:migrate`
 O vínculo `Registration.pairOfPlayersId` com `PairOfPlayers.id` usa colunas
 `TEXT` nos dois lados. A dupla é opcional no cadastro atual; inscrições
 existentes permanecem sem vínculo após a migração.
+Novos parceiros são associados por inscrição e categoria em
+`PairOfPlayers.registrationId` e `categoryId`, sem modificar o vínculo legado.
+`player1Id` armazena o nome informado do parceiro, não um ID de usuário.
 
 ## Configurar Pix e envio de PDF
 
@@ -85,6 +88,9 @@ usada no PDF está incluída no rastreamento de arquivos do Next.js.
 - O servidor valida os dados e calcula o preço em centavos. Não aceita
   totais do cliente, categorias desconhecidas ou duplicadas.
 - A seleção atualiza QR Code Pix estático e código copia e cola.
+- Cada categoria marcada exibe à direita um campo opcional de nome do parceiro.
+  Em celular, o campo pode quebrar para a próxima linha. Desmarcar remove o
+  nome daquela categoria. Os nomes são salvos e incluídos por categoria no PDF.
 - O envio registra a inscrição no PostgreSQL e gera um PDF anexado ao
   e-mail da organização. Não envia ao e-mail do atleta.
 - **O pagamento permanece pendente.** QR Code estático não verifica

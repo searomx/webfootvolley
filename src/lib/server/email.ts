@@ -1,10 +1,9 @@
 import "server-only";
 import nodemailer from "nodemailer";
 import { ConfigurationError, emailSetting, requiredSetting } from "./config";
-import { createRegistrationPdf } from "./pdf";
-import type { Registration } from "@/generated/prisma/client";
+import { createRegistrationPdf, type RegistrationWithPartners } from "./pdf";
 
-export async function sendRegistrationEmail(registration: Registration) {
+export async function sendRegistrationEmail(registration: RegistrationWithPartners) {
   const port = Number(requiredSetting("SMTP_PORT"));
   const secure = requiredSetting("SMTP_SECURE");
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new ConfigurationError("SMTP_PORT");

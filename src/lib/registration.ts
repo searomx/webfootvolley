@@ -20,6 +20,14 @@ const text = (min: number, max: number) => z.string().trim()
   .max(max, `Use no máximo ${max} caracteres.`)
   .refine((value) => !/[\u0000-\u001f\u007f]/.test(value), "Remova os caracteres de controle.");
 
+const partnerSchema = z.object({
+  categoryId: z.enum(categoryIds),
+  player1Id: text(0, 150).refine(
+    (value) => value === "" || (value.length >= 3 && value.split(/\s+/).length >= 2),
+    "Informe nome e sobrenome do parceiro.",
+  ),
+}).strict();
+
 export const registrationSchema = z.object({
   fullName: text(3, 150).refine((value) => value.split(/\s+/).length >= 2, "Informe nome e sobrenome."),
   nickname: text(0, 80),
@@ -37,7 +45,20 @@ export const registrationSchema = z.object({
     .refine((values) => new Set(values).size === values.length, "Etapas duplicadas."),
   categories: z.array(z.enum(categoryIds)).min(1, "Selecione pelo menos uma categoria.").max(8)
     .refine((values) => new Set(values).size === values.length, "Categorias duplicadas."),
-}).strict();
+  partners: z.array(partnerSchema).max(8).default([]),
+}).strict().superRefine((athlete, context) => {
+  const seen = new Set<CategoryId>();
+  athlete.partners.forEach((partner, index) => {
+    if (!athlete.categories.includes(partner.categoryId) || seen.has(partner.categoryId)) {
+      context.addIssue({
+        code: "custom",
+        path: ["partners", index, "player1Id"],
+        message: "Informe apenas um parceiro por categoria selecionada.",
+      });
+    }
+    seen.add(partner.categoryId);
+  });
+});
 
 export const submissionSchema = z.object({
   requestId: z.uuid(),

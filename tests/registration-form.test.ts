@@ -44,6 +44,49 @@ async function fillForm() {
 }
 
 describe("recuperação da inscrição", () => {
+  it("exibe um parceiro por categoria e remove somente o valor da categoria desmarcada", async () => {
+    respond = () => Response.json({
+      id: "protocolo", amountCents: 10000, emailStatus: "SENT", message: "PDF enviado.",
+    });
+    const user = await fillForm();
+    const firstCheckbox = screen.getByRole("checkbox", { name: /Masculino C/ });
+    const secondCheckbox = screen.getByRole("checkbox", { name: /Masculino B/ });
+    expect(screen.queryByLabelText(/Nome do parceiro.*Masculino B/)).toBeNull();
+    const first = screen.getByLabelText<HTMLInputElement>(/Nome do parceiro.*Masculino C/);
+    expect(first.required).toBe(false);
+    await user.type(first, "Parceiro Primeiro");
+    await user.click(secondCheckbox);
+    await user.type(screen.getByLabelText(/Nome do parceiro.*Masculino B/), "Parceiro Segundo");
+    await user.click(firstCheckbox);
+    expect(screen.queryByLabelText(/Nome do parceiro.*Masculino C/)).toBeNull();
+    expect(screen.getByLabelText<HTMLInputElement>(/Nome do parceiro.*Masculino B/).value).toBe("Parceiro Segundo");
+    await user.click(firstCheckbox);
+    expect(screen.getByLabelText<HTMLInputElement>(/Nome do parceiro.*Masculino C/).value).toBe("");
+    await user.type(screen.getByLabelText(/Nome do parceiro.*Masculino C/), "Parceiro Novo");
+    await user.click(screen.getByRole("button", { name: "Enviar inscrição" }));
+    await screen.findByText("PDF enviado.");
+    expect(submissions[0].athlete.partners).toEqual([
+      { categoryId: "masculino-b", player1Id: "Parceiro Segundo" },
+      { categoryId: "masculino-c", player1Id: "Parceiro Novo" },
+    ]);
+    expect(firstCheckbox.closest("fieldset")?.disabled).toBe(true);
+    await user.click(screen.getByRole("button", { name: "Cadastrar outro atleta" }));
+    expect(screen.queryByLabelText(/Nome do parceiro/)).toBeNull();
+    await user.click(firstCheckbox);
+    expect(screen.getByLabelText<HTMLInputElement>(/Nome do parceiro.*Masculino C/).value).toBe("");
+  });
+
+  it("associa erros de nome ao input e não envia dados inválidos", async () => {
+    const user = await fillForm();
+    const partner = screen.getByLabelText<HTMLInputElement>(/Nome do parceiro.*Masculino C/);
+    await user.type(partner, "Parceiro");
+    await user.click(screen.getByRole("button", { name: "Enviar inscrição" }));
+    await screen.findByText("Informe nome e sobrenome do parceiro.");
+    expect(partner.getAttribute("aria-invalid")).toBe("true");
+    expect(partner.getAttribute("aria-describedby")).toBe("partner-masculino-c-error");
+    expect(submissions).toHaveLength(0);
+  });
+
   it("permite telefone opcional e envia o valor informado", async () => {
     respond = () => Response.json({
       id: "protocolo", amountCents: 6000, emailStatus: "SENT", message: "PDF enviado.",
@@ -89,6 +132,7 @@ describe("recuperação da inscrição", () => {
       return Response.json({ message: "Servidor indisponível." }, { status: Number(failure) });
     };
     const user = await fillForm();
+    await user.type(screen.getByLabelText(/Nome do parceiro.*Masculino C/), "Parceiro Preservado");
     await user.click(screen.getByRole("button", { name: "Enviar inscrição" }));
     await waitFor(() => expect(screen.getByRole<HTMLButtonElement>("button", { name: "Tentar envio novamente" }).disabled).toBe(false));
     const name = screen.getByLabelText<HTMLInputElement>("Nome completo", { exact: false });
@@ -97,6 +141,7 @@ describe("recuperação da inscrição", () => {
     await user.click(screen.getByRole("button", { name: "Tentar envio novamente" }));
     await screen.findByText("Falha ao enviar PDF.");
     expect(submissions[1]).toEqual(submissions[0]);
+    expect(submissions[1].athlete.partners[0].player1Id).toBe("Parceiro Preservado");
     respond = () => Response.json({ id: "protocolo", amountCents: 6000, emailStatus: "SENT", message: "PDF enviado." });
     await user.click(screen.getByRole("button", { name: "Tentar envio novamente" }));
     await screen.findByText("PDF enviado.");

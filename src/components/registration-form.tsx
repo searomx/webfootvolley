@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Check, Copy, LoaderCircle, Trophy } from "lucide-react";
@@ -35,12 +35,13 @@ export function RegistrationForm() {
     resolver: zodResolver(registrationSchema),
     defaultValues: {
       fullName: "", nickname: "", address: "", trainingPlace: "", birthDate: "", email: "", phone: "",
-      stages: [], categories: [],
+      stages: [], categories: [], partners: [],
     },
   });
   const [pixResponse, setPixResponse] = useState<{
     key: string; data?: z.infer<typeof pixResultSchema>; error?: string;
   }>();
+  const partners = useWatch({ control: form.control, name: "partners" }) ?? [];
   const [result, setResult] = useState<RegistrationResult>();
   const [submitError, setSubmitError] = useState("");
   const [copyStatus, setCopyStatus] = useState("");
@@ -184,25 +185,50 @@ export function RegistrationForm() {
                 <div className="category-day" key={date}>
                   <h3>{date === "28/11" ? "Sábado" : "Domingo"} <span>{date}/2026</span></h3>
                   <div className="category-choices">
-                    {categories.filter((category) => category.date === date).map((category, index) => (
-                      <div className={`category-choice ${field.value.includes(category.id) ? "selected" : ""}`} key={category.id}>
-                        <Checkbox
-                          id={category.id}
-                          ref={date === "28/11" && index === 0 ? field.ref : undefined}
-                          checked={field.value.includes(category.id)}
-                          onBlur={field.onBlur}
-                          aria-invalid={Boolean(form.formState.errors.categories)}
-                          aria-describedby={`category-help${form.formState.errors.categories ? " category-error" : ""}`}
-                          onCheckedChange={(checked) => {
-                            const values = checked === true ? [...field.value, category.id]
-                              : field.value.filter((value) => value !== category.id);
-                            field.onChange(values);
-                            setSelected(values);
-                          }}
-                        />
-                        <Label htmlFor={category.id}><span className="category-time">{category.time}</span>{category.name}</Label>
-                      </div>
-                    ))}
+                    {categories.filter((category) => category.date === date).map((category, index) => {
+                      const partnerIndex = partners.findIndex((partner) => partner.categoryId === category.id);
+                      const partnerError = form.formState.errors.partners?.[partnerIndex]?.player1Id;
+                      return (
+                        <div className={`category-choice ${field.value.includes(category.id) ? "selected" : ""}`} key={category.id}>
+                          <Checkbox
+                            id={category.id}
+                            ref={date === "28/11" && index === 0 ? field.ref : undefined}
+                            checked={field.value.includes(category.id)}
+                            onBlur={field.onBlur}
+                            aria-invalid={Boolean(form.formState.errors.categories)}
+                            aria-describedby={`category-help${form.formState.errors.categories ? " category-error" : ""}`}
+                            onCheckedChange={(checked) => {
+                              const values = checked === true ? [...field.value, category.id]
+                                : field.value.filter((value) => value !== category.id);
+                              field.onChange(values);
+                              setSelected(values);
+                              form.setValue("partners", checked === true
+                                ? [...partners, { categoryId: category.id, player1Id: "" }]
+                                : partners.filter((partner) => partner.categoryId !== category.id),
+                              { shouldDirty: true, shouldValidate: form.formState.isSubmitted });
+                            }}
+                          />
+                          <Label className="category-label" htmlFor={category.id}><span className="category-time">{category.time}</span>{category.name}</Label>
+                          {field.value.includes(category.id) && partnerIndex >= 0 && (
+                            <div className="form-field category-partner">
+                              <Label htmlFor={`partner-${category.id}`}>
+                                Nome do parceiro (opcional)<span className="sr-only"> — {category.name}</span>
+                              </Label>
+                              <Input
+                                id={`partner-${category.id}`}
+                                placeholder="Nome e sobrenome"
+                                maxLength={150}
+                                autoComplete="off"
+                                aria-invalid={Boolean(partnerError)}
+                                aria-describedby={partnerError ? `partner-${category.id}-error` : undefined}
+                                {...form.register(`partners.${partnerIndex}.player1Id`)}
+                              />
+                              {partnerError && <p className="field-error" id={`partner-${category.id}-error`}>{partnerError.message}</p>}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ))}

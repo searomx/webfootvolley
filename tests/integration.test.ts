@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { once } from "node:events";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { SMTPServer } from "smtp-server";
@@ -6,7 +6,7 @@ import { simpleParser } from "mailparser";
 import { PDFDocument } from "pdf-lib";
 import { getDb } from "@/lib/server/db";
 import { POST } from "@/app/api/registrations/route";
-import { registrationResultSchema } from "@/lib/registration";
+import { registrationResultSchema, registrationSchema } from "@/lib/registration";
 
 const messages: Buffer[] = [];
 let failEmail = false;
@@ -35,6 +35,10 @@ const athlete = {
   fullName: "João Atleta Teste", nickname: "Teste", address: "Rua de Teste, 100",
   trainingPlace: "Arena Teste", birthDate: "2000-02-29", phone: "(11) 99999-1234", email: "athlete@example.org",
   stages: ["Primeira", "Terceira"], categories: ["masculino-c", "misto-b"],
+  partners: [
+    { categoryId: "masculino-c", player1Id: "Parceiro Masculino" },
+    { categoryId: "misto-b", player1Id: "Parceira Misto" },
+  ],
 };
 
 function request(requestId = randomUUID(), patch = {}) {
@@ -90,6 +94,10 @@ describe("inscrição com PostgreSQL e SMTP reais isolados", () => {
     expect(saved.emailStatus).toBe("SENT");
     expect(saved.birthDate.toISOString().slice(0, 10)).toBe("2000-02-29");
     expect(saved.stages).toEqual(athlete.stages);
+    const partners = await getDb().pairOfPlayers.findMany({
+      where: { registrationId: result.id }, orderBy: { categoryId: "asc" },
+    });
+    expect(partners.map(({ categoryId, player1Id }) => ({ categoryId, player1Id }))).toEqual(athlete.partners);
     expect(messages).toHaveLength(1);
     const email = await simpleParser(messages[0]);
     expect(email.to).toMatchObject({ value: [{ address: "organization@example.org" }] });
@@ -104,10 +112,53 @@ describe("inscrição com PostgreSQL e SMTP reais isolados", () => {
     const responses = await Promise.all([POST(request(id)), POST(request(id))]);
     expect(responses.every((response) => [200, 202].includes(response.status))).toBe(true);
     expect(await getDb().registration.count()).toBe(1);
+    expect(await getDb().pairOfPlayers.count()).toBe(2);
     expect(messages).toHaveLength(1);
     const retry = await POST(request(id));
     expect(retry.status).toBe(200);
     expect(messages).toHaveLength(1);
+  });
+  it("não duplica parceiros no retry nem depende da ordem das categorias", async () => {
+    const id = randomUUID();
+    await POST(request(id));
+    const response = await POST(request(id, {
+      categories: [...athlete.categories].reverse(), partners: [...athlete.partners].reverse(),
+    }));
+    expect(response.status).toBe(200);
+    expect(await getDb().pairOfPlayers.count()).toBe(2);
+    expect((await POST(request(id, {
+      partners: [{ categoryId: "masculino-c", player1Id: "Outro Parceiro" }],
+    }))).status).toBe(409);
+    expect(await getDb().pairOfPlayers.count()).toBe(2);
+  });
+  it("mantém compatibilidade com protocolos antigos sem parceiros", async () => {
+    const id = randomUUID();
+    const response = await POST(request(id, { partners: undefined }));
+    const result = registrationResultSchema.parse(await response.json());
+    const { partners, ...oldAthlete } = registrationSchema.parse({ ...athlete, partners: undefined });
+    expect(partners).toEqual([]);
+    const fingerprint = createHash("sha256").update(JSON.stringify({
+      ...oldAthlete, stages: [...oldAthlete.stages].sort(), categories: [...oldAthlete.categories].sort(),
+    })).digest("hex");
+    await getDb().registration.update({ where: { id: result.id }, data: { fingerprint } });
+    expect((await POST(request(id, {
+      partners: [{ categoryId: "masculino-c", player1Id: "" }],
+    }))).status).toBe(200);
+    expect(await getDb().pairOfPlayers.count()).toBe(0);
+  });
+  it("reverte a inscrição se a persistência dos parceiros falhar", async () => {
+    await getDb().$executeRaw`
+      ALTER TABLE "PairOfPlayers"
+      ADD CONSTRAINT "test_reject_partner" CHECK ("player1Id" <> 'Parceiro Masculino')
+    `;
+    try {
+      expect((await POST(request())).status).toBe(500);
+      expect(await getDb().registration.count()).toBe(0);
+      expect(await getDb().pairOfPlayers.count()).toBe(0);
+      expect(messages).toHaveLength(0);
+    } finally {
+      await getDb().$executeRaw`ALTER TABLE "PairOfPlayers" DROP CONSTRAINT "test_reject_partner"`;
+    }
   });
   it("preserva inscrição na falha SMTP e permite reenvio sem novo cadastro", async () => {
     const id = randomUUID();
