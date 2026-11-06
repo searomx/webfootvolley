@@ -1,5 +1,6 @@
 import "server-only";
 import { createHash } from "node:crypto";
+import { Prisma } from "@/generated/prisma/client";
 import { getDb } from "./db";
 import { ConfigurationError } from "./config";
 
@@ -65,6 +66,8 @@ export function errorResponse(error: unknown, operation: string) {
     console.error(`[${operation}] Configuração inválida: ${error.setting}.`);
     return Response.json({ message: "Serviço não configurado. Entre em contato com a organização." }, { status: 503 });
   }
-  console.error(`[${operation}] Falha interna (${error instanceof Error ? error.name : "UnknownError"}).`);
+  const errorType = error instanceof Error ? error.name : "UnknownError";
+  const errorCode = error instanceof Prisma.PrismaClientKnownRequestError ? `; código ${error.code}` : "";
+  console.error(`[${operation}] Falha interna (${errorType}${errorCode}).`);
   return Response.json({ message: "Não foi possível concluir a operação. Tente novamente." }, { status: 500 });
 }

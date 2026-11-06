@@ -30,6 +30,12 @@ Para usar um PostgreSQL existente, configure `DATABASE_URL` e execute
 `npm run db:migrate` somente no banco destinado a esta aplicação.
 Não há reset automático.
 
+Para diagnosticar HTTP 500 em produção, consulte os logs de `/api/registrations`.
+Erros conhecidos do Prisma registram o código (por exemplo, `P2021` para tabela
+ausente ou `P2022` para coluna ausente), sem registrar a mensagem completa,
+credenciais ou dados do formulário. Confirme que as migrações foram aplicadas
+ao mesmo banco definido em `DATABASE_URL` no ambiente Production da Vercel.
+
 As variáveis `POSTGRES_USER`, `POSTGRES_DB` e `POSTGRES_PASSWORD` do Docker
 só inicializam um volume vazio. Alterá-las no `.env` não cria usuários,
 bancos nem muda senhas em volumes existentes, mesmo ao recriar o container.
