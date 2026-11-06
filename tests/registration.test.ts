@@ -20,6 +20,16 @@ describe("preço", () => {
 
 describe("validação de inscrição", () => {
   it("aceita dados válidos sem apelido nem etapas", () => expect(registrationSchema.safeParse(valid).success).toBe(true));
+  it("aceita telefone opcional ausente ou em branco", () => {
+    expect(registrationSchema.parse(valid).phone).toBe("");
+    expect(registrationSchema.parse({ ...valid, phone: "" }).phone).toBe("");
+  });
+  it("aceita telefone informado dentro do limite", () => {
+    expect(registrationSchema.parse({ ...valid, phone: "(11) 99999-1234" }).phone).toBe("(11) 99999-1234");
+  });
+  it("rejeita telefone acima do limite", () => {
+    expect(registrationSchema.safeParse({ ...valid, phone: "1".repeat(21) }).success).toBe(false);
+  });
   it("aceita todas as oito categorias", () => expect(registrationSchema.safeParse({ ...valid, categories: categoryIds }).success).toBe(true));
   it.each(["2026-02-30", "2025-02-29", "2999-01-01", "1899-12-31", "2026-13-01", ""])(
     "rejeita nascimento inválido %s", (birthDate) => expect(registrationSchema.safeParse({ ...valid, birthDate }).success).toBe(false),

@@ -31,6 +31,7 @@ export const registrationSchema = z.object({
       return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value &&
         value >= "1900-01-01" && value <= new Date().toISOString().slice(0, 10);
     }, "Informe uma data de nascimento válida, não futura."),
+  phone: text(0, 20).default(""),
   email: z.email("Informe um e-mail válido.").max(254),
   stages: z.array(z.enum(stageNames)).max(3)
     .refine((values) => new Set(values).size === values.length, "Etapas duplicadas."),

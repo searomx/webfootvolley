@@ -33,7 +33,7 @@ const smtp = new SMTPServer({
 
 const athlete = {
   fullName: "João Atleta Teste", nickname: "Teste", address: "Rua de Teste, 100",
-  trainingPlace: "Arena Teste", birthDate: "2000-02-29", email: "athlete@example.org",
+  trainingPlace: "Arena Teste", birthDate: "2000-02-29", phone: "(11) 99999-1234", email: "athlete@example.org",
   stages: ["Primeira", "Terceira"], categories: ["masculino-c", "misto-b"],
 };
 
@@ -86,6 +86,7 @@ describe("inscrição com PostgreSQL e SMTP reais isolados", () => {
     const saved = await getDb().registration.findUniqueOrThrow({ where: { id: result.id } });
     expect(saved.paymentStatus).toBe("PENDING");
     expect(saved.fullName).toBe(athlete.fullName);
+    expect(saved.phone).toBe(athlete.phone);
     expect(saved.emailStatus).toBe("SENT");
     expect(saved.birthDate.toISOString().slice(0, 10)).toBe("2000-02-29");
     expect(saved.stages).toEqual(athlete.stages);

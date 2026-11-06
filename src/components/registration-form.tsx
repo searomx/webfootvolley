@@ -25,15 +25,16 @@ const fields = [
   { name: "address", label: "Endereço", placeholder: "Rua, número, bairro e cidade", autoComplete: "street-address", max: 300, wide: true },
   { name: "trainingPlace", label: "Onde treina", placeholder: "Arena, clube ou local de treino", max: 150 },
   { name: "email", label: "E-mail", type: "email", placeholder: "seu@email.com", autoComplete: "email", max: 254 },
+  { name: "phone", label: "Telefone", type: "tel", placeholder: "(99) 99999-9999", autoComplete: "tel", max: 20 },
 ] as const;
 
 export function RegistrationForm() {
   const selected = useRegistrationStore((state) => state.selectedCategories);
   const setSelected = useRegistrationStore((state) => state.setSelectedCategories);
-  const form = useForm<Athlete>({
+  const form = useForm<z.input<typeof registrationSchema>, unknown, Athlete>({
     resolver: zodResolver(registrationSchema),
     defaultValues: {
-      fullName: "", nickname: "", address: "", trainingPlace: "", birthDate: "", email: "",
+      fullName: "", nickname: "", address: "", trainingPlace: "", birthDate: "", email: "", phone: "",
       stages: [], categories: [],
     },
   });
@@ -133,10 +134,10 @@ export function RegistrationForm() {
           <div className="athlete-fields">
             {fields.map((field) => {
               const error = form.formState.errors[field.name];
-              const optional = field.name === "nickname";
+              const optional = field.name === "nickname" || field.name === "phone";
               return (
                 <div key={field.name} className={`form-field ${"wide" in field ? "wide" : ""}`}>
-                  <Label htmlFor={field.name}>{field.label}{!optional && <span aria-hidden="true"> *</span>}</Label>
+                  <Label htmlFor={field.name}>{field.label}{optional && field.name === "phone" ? " (opcional)" : null}{!optional && <span aria-hidden="true"> *</span>}</Label>
                   <Input
                     id={field.name}
                     type={"type" in field ? field.type : "text"}

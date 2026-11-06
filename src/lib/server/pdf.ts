@@ -61,6 +61,7 @@ export async function createRegistrationPdf(registration: Registration) {
   line(`Endereço: ${registration.address}`);
   line(`Onde treina: ${registration.trainingPlace}`);
   line(`Nascimento: ${registration.birthDate.toISOString().slice(0, 10).split("-").reverse().join("/")}`);
+  line(`Telefone: ${registration.phone || "Não informado"}`);
   line(`E-mail: ${registration.email}`);
   line(`Etapas em 2026: ${registration.stages.join(", ") || "Não participou"}`);
   y -= 12;

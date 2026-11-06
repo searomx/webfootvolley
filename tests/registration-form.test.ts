@@ -44,6 +44,20 @@ async function fillForm() {
 }
 
 describe("recuperação da inscrição", () => {
+  it("permite telefone opcional e envia o valor informado", async () => {
+    respond = () => Response.json({
+      id: "protocolo", amountCents: 6000, emailStatus: "SENT", message: "PDF enviado.",
+    });
+    const user = await fillForm();
+    const phone = screen.getByLabelText<HTMLInputElement>("Telefone (opcional)");
+    expect(phone.type).toBe("tel");
+    expect(phone.required).toBe(false);
+    await user.type(phone, "(11) 99999-1234");
+    await user.click(screen.getByRole("button", { name: "Enviar inscrição" }));
+    await screen.findByText("PDF enviado.");
+    expect(submissions[0].athlete.phone).toBe("(11) 99999-1234");
+  });
+
   it.each([400, 409])("permite corrigir HTTP %s sem trocar o protocolo", async (status) => {
     respond = () => Response.json({ message: "Reenvie os dados originais." }, { status });
     const user = await fillForm();

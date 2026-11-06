@@ -3,6 +3,9 @@ generator client {
   output   = "../src/generated/prisma"
 }
 
+// datasource db {
+//   provider = "postgresql"
+// }
 datasource db {
   provider = "postgresql"
 }
@@ -27,6 +30,7 @@ model Registration {
   address       String        @db.VarChar(300)
   trainingPlace String        @db.VarChar(150)
   birthDate     DateTime      @db.Date
+  phone         String?       @db.VarChar(20)
   email         String        @db.VarChar(254)
   stages        String[]
   categories    String[]

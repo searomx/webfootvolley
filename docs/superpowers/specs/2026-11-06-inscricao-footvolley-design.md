@@ -13,9 +13,11 @@ serão persistidos no navegador.
 
 ## Formulário
 
-- Nome completo, apelido, endereço, onde treina, data de nascimento e e-mail.
+- Nome completo, apelido, endereço, onde treina, data de nascimento, e-mail e
+  telefone.
 - Nome, endereço, local de treino, nascimento e e-mail obrigatórios.
-- Apelido opcional; limites de tamanho serão compartilhados pelo cliente e servidor.
+- Apelido e telefone opcionais; limites de tamanho serão compartilhados pelo
+  cliente e servidor.
 - Nascimento deve ser uma data válida, não futura; não há restrição etária definida.
 - Etapas da liga interna de 2026: Primeira, Segunda e Terceira, com
   checkboxes independentes. Nenhuma seleção é permitida para quem não participou.

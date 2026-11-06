@@ -14,6 +14,7 @@ export async function registerAthlete(requestId: string, athlete: Athlete): Prom
   await db.registration.createMany({
     data: {
       ...athlete,
+      phone: athlete.phone || null,
       requestId,
       fingerprint,
       birthDate: new Date(`${athlete.birthDate}T00:00:00.000Z`),

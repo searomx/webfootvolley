@@ -17,7 +17,7 @@ export default function Home() {
       </header>
       <main className="registration-page">
         <p className="registration-promotion">Primeiro lote disponível até 15 de novembro!</p>
-        <h1>Liga Interna de Futevolei - 3° etapa - Contorno da Bola</h1>
+        <h1>Liga Interna de Futevôlei — 3ª etapa — Contorno da Bola</h1>
         <p className="competition-date">28 e 29 de novembro de 2026</p>
         <p className="page-intro">Cadastre seus dados, escolha as categorias e confira o valor da inscrição.</p>
         <RegistrationProvider><RegistrationForm /></RegistrationProvider>
