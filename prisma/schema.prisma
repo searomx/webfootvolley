@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum EmailStatus {
+  PENDING
+  SENDING
+  SENT
+  FAILED
+}
+
+enum PaymentStatus {
+  PENDING
+}
+
+model Registration {
+  id            String        @id @default(uuid())
+  requestId     String        @unique @db.Uuid
+  fingerprint   String
+  fullName      String        @db.VarChar(150)
+  nickname      String        @db.VarChar(80)
+  address       String        @db.VarChar(300)
+  trainingPlace String        @db.VarChar(150)
+  birthDate     DateTime      @db.Date
+  email         String        @db.VarChar(254)
+  stages        String[]
+  categories    String[]
+  amountCents   Int
+  paymentStatus PaymentStatus @default(PENDING)
+  emailStatus   EmailStatus   @default(PENDING)
+  emailLeaseAt  DateTime?
+  emailSentAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model RequestBucket {
+  key      String   @id
+  count    Int      @default(1)
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}
