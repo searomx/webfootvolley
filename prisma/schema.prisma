@@ -30,8 +30,7 @@ model User{
 }
 model PairOfPlayers {
   id        String   @id @default(uuid())
-  player1Id String
-  player2Id String
+  player1Id String?
   registrations Registration[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
