@@ -43,6 +43,10 @@ ou configurar um banco shadow separado. Não conceda superusuário para isso.
 Para aplicar migrations existentes, use `npm run db:migrate`
 (`prisma migrate deploy`), que não precisa de shadow database.
 
+O vínculo `Registration.pairOfPlayersId` com `PairOfPlayers.id` usa colunas
+`TEXT` nos dois lados. A dupla é opcional no cadastro atual; inscrições
+existentes permanecem sem vínculo após a migração.
+
 ## Configurar Pix e envio de PDF
 
 Consulte [`.env.example`](./.env.example). Configure as variáveis no `.env`

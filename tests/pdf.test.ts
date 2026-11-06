@@ -16,6 +16,7 @@ const registration: Registration = {
   email: "atleta@example.org",
   stages: [],
   categories: ["masculino-c"],
+  pairOfPlayersId: null,
   amountCents: 6000,
   paymentStatus: "PENDING",
   emailStatus: "SENT",
