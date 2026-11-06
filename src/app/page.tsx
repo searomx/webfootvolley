@@ -3,8 +3,10 @@ import Image from "next/image";
 import competitionPoster from "../../public/images/img_footvolley.jpeg";
 import { RegistrationProvider } from "@/components/registration-provider";
 import { RegistrationForm } from "@/components/registration-form";
+import favicon from "../../public/images/favicon.jpg";
 
 export default function Home() {
+  <Image src={favicon} alt="Favicon" width={32} height={32} />
   return (
     <>
       <header className="competition-header">
